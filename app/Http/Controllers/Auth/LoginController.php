@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Providers\RouteServiceProvider;
+use Exception;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
 use Illuminate\Support\Facades\Auth;
 use Laravel\Socialite\Facades\Socialite;
@@ -52,6 +53,12 @@ class LoginController extends Controller
 
         $user = User::where('email', $providerUser->getEmail())->first();
 
+        if ($user) {
+            $userProvider = User::where('email', $providerUser->getEmail())
+                ->where('provider', $provider)
+                ->first();
+        }
+
         if (!$user) {
             $user = User::create([
                 'name' => $providerUser->getName() ?? $providerUser->getNickname(),
@@ -60,10 +67,12 @@ class LoginController extends Controller
                 'provider' => $provider
             ]);
         }
+        if (!$userProvider) {
+            return redirect('/login')->with('social', 'Usuário já possui cadastro com esse e-mail');
+        }
 
         Auth::login($user);
 
         return redirect($this->redirectTo);
-
     }
 }
